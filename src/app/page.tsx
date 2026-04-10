@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { ClaimCard } from "@/components/ClaimCard";
 import { HighlightedText } from "@/components/HighlightedText";
-import { ScoreRing } from "@/components/ScoreRing";
+import { TrustMatrix } from "@/components/TrustMatrix";
 import type { VerifyResponse } from "@/lib/types";
 
 export default function Home() {
@@ -209,45 +209,12 @@ export default function Home() {
 
       {result ? (
         <section style={{ marginTop: "1.3rem" }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: "1rem",
-              border: "1px solid #e2e8f0",
-              borderRadius: "14px",
-              background: "#ffffff",
-              padding: "0.9rem 1rem"
-            }}
-          >
-            <div>
-              <p style={{ margin: 0, color: "#0f172a", fontWeight: 700 }}>Overall Trust Score</p>
-              <p style={{ margin: "0.25rem 0 0", color: "#64748b", fontSize: "0.9rem" }}>
-                Processed in {result.processing_time_ms}ms
-              </p>
-            </div>
-            {typeof result.overall_trust_score === "number" ? (
-              <ScoreRing score={result.overall_trust_score} />
-            ) : (
-              <div
-                style={{
-                  width: "92px",
-                  height: "92px",
-                  borderRadius: "999px",
-                  border: "2px solid #e5e7eb",
-                  display: "grid",
-                  placeItems: "center",
-                  color: "#64748b",
-                  fontSize: "1.6rem",
-                  fontWeight: 700
-                }}
-                aria-label="Trust score unavailable"
-              >
-                -
-              </div>
-            )}
-          </div>
+          <TrustMatrix
+            dimensions={result.dimensions}
+            overallScore={result.overall_trust_score}
+            riskLabel={result.risk_label}
+            reasoningPoints={result.reasoning_points}
+          />
 
           <HighlightedText originalText={submittedText} claims={result.claims} />
 

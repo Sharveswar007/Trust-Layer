@@ -5,6 +5,8 @@ import { queryWikidata } from "@/lib/sources/wikidata";
 import { checkFacts } from "@/lib/sources/factcheck";
 import { synthesizeVerdict } from "@/lib/verdict";
 import { getCached, setCached } from "@/lib/cache";
+import { classifyContent } from "@/lib/content-classifier";
+import { scoreDimensions, computeOverallScore, getRiskLevel } from "@/lib/dimension-scorer";
 import type { Claim, VerifyResponse } from "@/lib/types";
 
 type VerifyRequestBody = {
@@ -88,17 +90,64 @@ export async function POST(request: Request) {
       })
     );
 
-    const confidenceValues = verifiedClaims
-      .map((claim) => claim.confidence)
-      .filter((value): value is number => typeof value === "number");
+    // Classify content
+    const contentType = classifyContent(normalizedText, verifiedClaims.map((c) => c.text));
 
-    const overallTrustScore =
-      confidenceValues.length > 0
-        ? Math.round(confidenceValues.reduce((sum, value) => sum + value, 0) / confidenceValues.length)
-        : null;
+    // Score dimensions
+    const dimensions = await scoreDimensions(verifiedClaims, contentType, normalizedText);
+
+    // Compute overall trust score (weighted average of dimensions)
+    const overallTrustScore = computeOverallScore(dimensions);
+
+    // Get risk level
+    const { level: riskLevel, label: riskLabel } = getRiskLevel(overallTrustScore);
+
+    // Generate reasoning points
+    const reasoningPoints: string[] = [];
+
+    // Add dimension-specific reasons
+    for (const dim of dimensions) {
+      reasoningPoints.push(`${dim.name}: ${dim.score}/10 — ${dim.reason}`);
+    }
+
+    // Add top issues/anomalies
+    const correctCount = verifiedClaims.filter((c) => c.verdict === "correct").length;
+    const incorrectCount = verifiedClaims.filter((c) => c.verdict === "incorrect").length;
+    const unverifiableCount = verifiedClaims.filter((c) => c.verdict === "unverifiable").length;
+
+    if (correctCount > 0) {
+      reasoningPoints.push(`✓ ${correctCount} claim(s) verified with evidence`);
+    }
+    if (incorrectCount > 0) {
+      reasoningPoints.push(`✗ ${incorrectCount} claim(s) contradicted by sources`);
+    }
+    if (unverifiableCount > 0) {
+      const unverifiableRate = ((unverifiableCount / verifiedClaims.length) * 100).toFixed(0);
+      reasoningPoints.push(
+        `⚠️ ${unverifiableCount} claim(s) unverifiable (${unverifiableRate}% of total)`
+      );
+    }
+
+    // Check for heavy reliance on unvetted sources
+    const unvettedSources = verifiedClaims.filter((c) => !["factcheck", "wikidata", "wikipedia"].some((s) => c.source.toLowerCase().includes(s))).length;
+    if (unvettedSources > verifiedClaims.length * 0.5) {
+      reasoningPoints.push(
+        `⚠️ Heavy reliance on unvetted web snippets (${unvettedSources}/${verifiedClaims.length})`
+      );
+    }
+
+    // Check claim extraction quality
+    if (verifiedClaims.length === 0) {
+      reasoningPoints.push("ℹ️ No verifiable claims extracted from input");
+    }
 
     const response: VerifyResponse = {
+      content_type: contentType,
+      dimensions,
       overall_trust_score: overallTrustScore,
+      risk_level: riskLevel,
+      risk_label: riskLabel,
+      reasoning_points: reasoningPoints,
       claims: verifiedClaims,
       processing_time_ms: Date.now() - startedAt
     };
