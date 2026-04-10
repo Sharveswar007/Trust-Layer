@@ -1,5 +1,6 @@
-"use client";
+﻿"use client";
 
+import { AlertTriangle, CircleCheck, ShieldAlert } from "lucide-react";
 import type { TrustDimension } from "@/lib/types";
 
 interface TrustMatrixProps {
@@ -9,159 +10,71 @@ interface TrustMatrixProps {
   reasoningPoints: string[];
 }
 
-function getRiskEmoji(riskLabel: string): string {
-  if (riskLabel.includes("High Risk")) return "🔴";
-  if (riskLabel.includes("Medium Risk")) return "🟡";
-  return "🟢";
+function getRiskIcon(riskLabel: string) {
+  if (riskLabel.includes("High")) return ShieldAlert;
+  if (riskLabel.includes("Medium")) return AlertTriangle;
+  return CircleCheck;
 }
 
-export function TrustMatrix({
-  dimensions,
-  overallScore,
-  riskLabel,
-  reasoningPoints
-}: TrustMatrixProps) {
-  const riskEmoji = getRiskEmoji(riskLabel);
+function getRiskTone(riskLabel: string): string {
+  if (riskLabel.includes("High")) return "text-neutral-100 border-neutral-500 bg-neutral-900";
+  if (riskLabel.includes("Medium")) return "text-neutral-200 border-neutral-600 bg-neutral-900";
+  return "text-neutral-300 border-neutral-700 bg-neutral-900";
+}
+
+export function TrustMatrix({ dimensions, overallScore, riskLabel, reasoningPoints }: TrustMatrixProps) {
+  const RiskIcon = getRiskIcon(riskLabel);
+  const tone = getRiskTone(riskLabel);
 
   return (
-    <section
-      style={{
-        marginTop: "1.5rem",
-        border: "1px solid #e2e8f0",
-        borderRadius: "14px",
-        background: "#ffffff",
-        padding: "1.2rem"
-      }}
-    >
-      <h2 style={{ margin: "0 0 1rem", fontSize: "1.1rem", color: "#0f172a", fontWeight: 700 }}>
-        🧾 Final Trust Score
-      </h2>
+    <section className="panel p-4 md:p-5">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-neutral-800 pb-3">
+        <h2 className="text-lg md:text-xl font-semibold tracking-tight text-white">Final Trust Score</h2>
+        <span className="rounded-full border border-neutral-700 bg-neutral-900 px-3 py-1 text-xs tracking-[0.12em] uppercase text-neutral-300">
+          Matrix View
+        </span>
+      </div>
 
-      {/* Dimension Grid */}
-      <div
-        style={{
-          display: "grid",
-          gap: "0.7rem",
-          marginBottom: "1.2rem",
-          borderBottom: "1px solid #e5e7eb",
-          paddingBottom: "1rem"
-        }}
-      >
+      <div className="grid gap-2.5">
         {dimensions.map((dim) => (
           <div
             key={dim.name}
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 60px",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: "1rem"
-            }}
+            className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 rounded-xl border border-neutral-800 bg-black/35 px-3 py-2.5"
           >
-            <div>
-              <p style={{ margin: 0, color: "#0f172a", fontWeight: 600, fontSize: "0.95rem" }}>
-                {dim.name}
-              </p>
-              <p
-                style={{
-                  margin: "0.25rem 0 0",
-                  color: "#64748b",
-                  fontSize: "0.8rem",
-                  fontStyle: "italic"
-                }}
-              >
-                {dim.reason}
-              </p>
+            <div className="min-w-0">
+              <p className="m-0 text-sm md:text-[0.95rem] font-medium text-neutral-100 break-words">{dim.name}</p>
+              <p className="m-0 mt-1 text-xs md:text-sm text-neutral-400 break-words">{dim.reason}</p>
             </div>
-            <div
-              style={{
-                fontWeight: 700,
-                fontSize: "0.95rem",
-                color: dim.score >= 6 ? "#059669" : dim.score >= 4 ? "#d97706" : "#dc2626",
-                textAlign: "right"
-              }}
-            >
+            <div className="shrink-0 text-right text-sm font-semibold text-neutral-200">
               {dim.score}/{dim.max}
             </div>
           </div>
         ))}
       </div>
 
-      {/* Overall Score Card */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr auto",
-          alignItems: "center",
-          gap: "1rem",
-          background: "#f8fafc",
-          padding: "1rem",
-          borderRadius: "10px",
-          marginBottom: "1rem",
-          border: overallScore !== null && overallScore < 4 ? "2px solid #dc2626" : "1px solid #e2e8f0"
-        }}
-      >
-        <div>
-          <p style={{ margin: 0, color: "#0f172a", fontWeight: 700, fontSize: "1rem" }}>
-            Overall Document Trust
+      <div className="mt-4 rounded-xl border border-neutral-800 bg-neutral-950 p-3.5 md:p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="m-0 text-sm md:text-base font-semibold text-neutral-100">Overall Document Trust</p>
+          <p className="m-0 text-xl md:text-2xl font-semibold text-white">
+            {overallScore !== null ? `${overallScore.toFixed(1)}/10` : "-"}
           </p>
         </div>
-        <div style={{ textAlign: "right" }}>
-          <p
-            style={{
-              margin: 0,
-              fontSize: "1.4rem",
-              fontWeight: 700,
-              color: overallScore !== null && overallScore >= 6 ? "#059669" : overallScore !== null && overallScore >= 4 ? "#d97706" : "#dc2626"
-            }}
-          >
-            {overallScore !== null ? `${overallScore.toFixed(1)}/10` : "—"}
-          </p>
-          <p
-            style={{
-              margin: "0.25rem 0 0",
-              fontSize: "0.85rem",
-              fontWeight: 600,
-              color: riskLabel.includes("High") ? "#dc2626" : riskLabel.includes("Medium") ? "#d97706" : "#059669"
-            }}
-          >
-            {riskEmoji} {riskLabel}
-          </p>
+        <div className={`mt-2 inline-flex items-center gap-2 rounded-lg border px-2.5 py-1 text-xs md:text-sm font-medium ${tone}`}>
+          <RiskIcon size={15} />
+          {riskLabel}
         </div>
       </div>
 
-      {/* Reasoning Points */}
-      {reasoningPoints.length > 0 && (
-        <div>
-          <h3 style={{ margin: "0 0 0.5rem", fontSize: "0.95rem", color: "#0f172a", fontWeight: 700 }}>
-            Key Findings:
-          </h3>
-          <ul
-            style={{
-              margin: "0.5rem 0 0",
-              paddingLeft: "20px",
-              listStyle: "none",
-              display: "grid",
-              gap: "0.35rem"
-            }}
-          >
+      {reasoningPoints.length > 0 ? (
+        <section className="mt-4 border-t border-neutral-800 pt-3">
+          <h3 className="m-0 text-sm md:text-base font-semibold text-neutral-100">Reasons</h3>
+          <ul className="m-0 mt-2 list-disc pl-5 text-sm text-neutral-300 space-y-1.5">
             {reasoningPoints.map((point, index) => (
-              <li
-                key={index}
-                style={{
-                  color: "#475569",
-                  fontSize: "0.9rem",
-                  lineHeight: "1.4",
-                  borderLeft: "3px solid #cbd5e1",
-                  paddingLeft: "0.75rem"
-                }}
-              >
-                {point}
-              </li>
+              <li key={index} className="break-words">{point}</li>
             ))}
           </ul>
-        </div>
-      )}
+        </section>
+      ) : null}
     </section>
   );
 }

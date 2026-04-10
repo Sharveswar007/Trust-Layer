@@ -1,8 +1,8 @@
-"use client";
+﻿"use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { ClaimCard } from "@/components/ClaimCard";
-import { HighlightedText } from "@/components/HighlightedText";
+import { Loader2, ShieldCheck } from "lucide-react";
+import { ClaimsTable } from "@/components/ClaimsTable";
 import { TrustMatrix } from "@/components/TrustMatrix";
 import type { VerifyResponse } from "@/lib/types";
 
@@ -11,11 +11,10 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<VerifyResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [submittedText, setSubmittedText] = useState("");
   const [pipelineStage, setPipelineStage] = useState(0);
 
   const pipelineSteps = useMemo(
-    () => ["Extracting claims...", "Searching sources...", "Computing verdicts..."],
+    () => ["Extracting claims", "Checking evidence sources", "Computing trust matrix"],
     []
   );
 
@@ -26,15 +25,12 @@ export default function Home() {
     }
 
     setPipelineStage(0);
-    const timeouts = [
-      setTimeout(() => setPipelineStage(1), 750),
-      setTimeout(() => setPipelineStage(2), 1600)
-    ];
+    const t1 = setTimeout(() => setPipelineStage(1), 700);
+    const t2 = setTimeout(() => setPipelineStage(2), 1500);
 
     return () => {
-      for (const timeout of timeouts) {
-        clearTimeout(timeout);
-      }
+      clearTimeout(t1);
+      clearTimeout(t2);
     };
   }, [loading]);
 
@@ -66,7 +62,6 @@ export default function Home() {
       }
 
       setResult(payload as VerifyResponse);
-      setSubmittedText(input);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unexpected error while verifying.";
       setError(message);
@@ -76,179 +71,93 @@ export default function Home() {
   }
 
   return (
-    <main style={{ maxWidth: "860px", margin: "0 auto", padding: "2rem 1rem 3rem" }}>
-      <h1 style={{ margin: 0, fontSize: "2rem", color: "#ffffff" }}>TruthLayer Verify</h1>
-      <p style={{ marginTop: "0.5rem", color: "#ffffff" }}>
-        Paste text, verify claims with multi-source evidence, and inspect verdict confidence.
-      </p>
-
-      <form onSubmit={onSubmit} style={{ marginTop: "1rem", display: "grid", gap: "0.8rem" }}>
-        <textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Enter text to verify (10-5000 chars)..."
-          rows={6}
-          style={{
-            width: "100%",
-            borderRadius: "12px",
-            border: "1px solid #cbd5e1",
-            padding: "0.8rem",
-            fontSize: "0.95rem",
-            resize: "vertical"
-          }}
-        />
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <button
-            type="submit"
-            disabled={!canSubmit}
-            style={{
-              border: "none",
-              borderRadius: "999px",
-              background: canSubmit ? "#0f766e" : "#94a3b8",
-              color: "#ffffff",
-              padding: "0.55rem 1rem",
-              fontWeight: 700,
-              cursor: canSubmit ? "pointer" : "not-allowed"
-            }}
-          >
-            Verify
-          </button>
-
-          {loading ? (
-            <div style={{ display: "flex", alignItems: "center", gap: "0.45rem", color: "#334155" }}>
-              <span
-                style={{
-                  width: "16px",
-                  height: "16px",
-                  borderRadius: "999px",
-                  border: "2px solid #94a3b8",
-                  borderTopColor: "#0f766e",
-                  display: "inline-block",
-                  animation: "spin 0.8s linear infinite"
-                }}
-              />
-              Verifying...
-            </div>
-          ) : null}
+    <main className="app-shell">
+      <header className="mb-5 panel p-5 md:p-6 fade-in">
+        <div className="flex items-center gap-2 text-neutral-200">
+          <ShieldCheck size={18} />
+          <span className="text-xs tracking-[0.16em] uppercase">TruthLayer Intelligence</span>
         </div>
-      </form>
+        <h1 className="mt-3 mb-2 text-3xl md:text-4xl font-semibold tracking-tight text-white">
+          Trust Document Verification
+        </h1>
+        <p className="soft-text leading-relaxed max-w-3xl">
+          Submit text to evaluate factual reliability with a domain-specific trust matrix. Results include
+          evidence-backed claims, risk level, and clear reasoning points.
+        </p>
+      </header>
+
+      <section className="panel p-4 md:p-5 fade-in" style={{ animationDelay: "80ms" }}>
+        <form onSubmit={onSubmit} className="grid gap-3">
+          <label htmlFor="verify-input" className="text-sm font-medium text-neutral-200">
+            Enter text
+          </label>
+          <textarea
+            id="verify-input"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Enter text"
+            rows={7}
+            className="field-dark"
+          />
+
+          <div className="flex items-center gap-3">
+            <button type="submit" disabled={!canSubmit} className="btn-dark">
+              Verify
+            </button>
+            {loading ? (
+              <div className="flex items-center gap-2 soft-text text-sm">
+                <Loader2 size={16} className="animate-spin" />
+                Running verification...
+              </div>
+            ) : null}
+          </div>
+        </form>
+      </section>
 
       {loading ? (
-        <section
-          style={{
-            marginTop: "1rem",
-            border: "1px solid #e2e8f0",
-            borderRadius: "12px",
-            background: "#ffffff",
-            padding: "0.85rem 0.9rem",
-            display: "grid",
-            gap: "0.75rem"
-          }}
-        >
-          {pipelineSteps.map((step, index) => {
-            const isCurrent = pipelineStage === index;
-            const isDone = pipelineStage > index;
-            const width = isDone ? "100%" : isCurrent ? "68%" : "0%";
+        <section className="panel p-4 mt-4 fade-in">
+          <div className="grid gap-3">
+            {pipelineSteps.map((step, index) => {
+              const isDone = pipelineStage > index;
+              const isCurrent = pipelineStage === index;
+              const width = isDone ? "100%" : isCurrent ? "65%" : "0%";
 
-            return (
-              <div key={step} style={{ display: "grid", gap: "0.35rem" }}>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    color: isDone || isCurrent ? "#0f172a" : "#64748b",
-                    fontWeight: isCurrent ? 700 : 600,
-                    fontSize: "0.9rem"
-                  }}
-                >
-                  <span>{step}</span>
-                  <span style={{ fontSize: "0.78rem" }}>{isDone ? "Done" : isCurrent ? "Running" : "Pending"}</span>
+              return (
+                <div key={step} className="grid gap-1.5">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className={isDone || isCurrent ? "text-neutral-100" : "caption-text"}>{step}</span>
+                    <span className="caption-text">{isDone ? "Done" : isCurrent ? "Running" : "Pending"}</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-[#1a1a1a] overflow-hidden border border-[#2c2c2c]">
+                    <div
+                      className="h-full rounded-full bg-neutral-200 transition-all duration-300"
+                      style={{ width }}
+                    />
+                  </div>
                 </div>
-
-                <div
-                  style={{
-                    height: "8px",
-                    width: "100%",
-                    borderRadius: "999px",
-                    background: "#e5e7eb",
-                    overflow: "hidden"
-                  }}
-                >
-                  <div
-                    style={{
-                      height: "100%",
-                      width,
-                      borderRadius: "999px",
-                      background: isDone ? "#10b981" : "#0f766e",
-                      transition: "width 520ms ease"
-                    }}
-                  />
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </section>
       ) : null}
 
       {error ? (
-        <div
-          role="alert"
-          style={{
-            marginTop: "1rem",
-            border: "1px solid #fecaca",
-            background: "#fef2f2",
-            color: "#b91c1c",
-            borderRadius: "12px",
-            padding: "0.75rem"
-          }}
-        >
+        <section className="mt-4 panel p-3 text-neutral-200 fade-in" role="alert">
           {error}
-        </div>
+        </section>
       ) : null}
 
       {result ? (
-        <section style={{ marginTop: "1.3rem" }}>
+        <section className="mt-5 fade-in">
           <TrustMatrix
             dimensions={result.dimensions}
             overallScore={result.overall_trust_score}
             riskLabel={result.risk_label}
             reasoningPoints={result.reasoning_points}
           />
-
-          <HighlightedText originalText={submittedText} claims={result.claims} />
-
-          <div style={{ marginTop: "1rem", display: "grid", gap: "0.75rem" }}>
-            {result.claims.map((claim, index) => (
-              <div
-                key={`${claim.text}-${index}`}
-                style={{
-                  opacity: 0,
-                  transform: "translateY(10px)",
-                  animation: `claimStagger 380ms ease forwards`,
-                  animationDelay: `${index * 90}ms`
-                }}
-              >
-                <ClaimCard claim={claim} />
-              </div>
-            ))}
-          </div>
+          <ClaimsTable claims={result.claims} />
         </section>
       ) : null}
-
-      <style jsx global>{`
-        @keyframes spin {
-          to {
-            transform: rotate(360deg);
-          }
-        }
-        @keyframes claimStagger {
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
     </main>
   );
 }

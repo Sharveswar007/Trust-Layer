@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, ChevronDown, ChevronUp, HelpCircle, XCircle } from "lucide-react";
+import { useMemo, useState } from "react";
+import { ChevronDown, ChevronUp, CircleAlert, CircleCheck, CircleHelp } from "lucide-react";
 import type { Claim } from "@/lib/types";
 
 type ClaimCardProps = {
@@ -12,123 +12,69 @@ function getVerdictMeta(verdict: Claim["verdict"]) {
   if (verdict === "correct") {
     return {
       label: "Correct",
-      color: "#0f9d58",
-      Icon: CheckCircle2
+      icon: CircleCheck,
+      tone: "text-neutral-200 border-neutral-600 bg-neutral-900"
     };
   }
 
   if (verdict === "incorrect") {
     return {
       label: "Incorrect",
-      color: "#d93025",
-      Icon: XCircle
+      icon: CircleAlert,
+      tone: "text-neutral-200 border-neutral-600 bg-neutral-900"
     };
   }
 
   return {
     label: "Unverifiable",
-    color: "#5f6368",
-    Icon: HelpCircle
+    icon: CircleHelp,
+    tone: "text-neutral-300 border-neutral-700 bg-neutral-900"
   };
 }
 
 export function ClaimCard({ claim }: ClaimCardProps) {
   const [expanded, setExpanded] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    const id = requestAnimationFrame(() => setMounted(true));
-    return () => cancelAnimationFrame(id);
-  }, []);
-
   const meta = useMemo(() => getVerdictMeta(claim.verdict), [claim.verdict]);
+  const Icon = meta.icon;
 
   return (
-    <article
-      style={{
-        border: "1px solid #e5e7eb",
-        borderRadius: "14px",
-        background: "#ffffff",
-        padding: "0.95rem",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-        opacity: mounted ? 1 : 0,
-        transform: mounted ? "translateY(0)" : "translateY(8px)",
-        transition: "opacity 280ms ease, transform 280ms ease"
-      }}
-    >
+    <article className="panel p-3.5 md:p-4">
       <button
         type="button"
         onClick={() => setExpanded((prev) => !prev)}
         aria-expanded={expanded}
-        style={{
-          width: "100%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: "0.8rem",
-          background: "transparent",
-          border: "none",
-          padding: 0,
-          textAlign: "left"
-        }}
+        className="w-full flex items-start justify-between gap-3 bg-transparent border-0 p-0 text-left"
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "0.65rem", minWidth: 0 }}>
-          <meta.Icon size={20} color={meta.color} aria-hidden="true" />
-          <p
-            style={{
-              margin: 0,
-              fontSize: "0.95rem",
-              fontWeight: 600,
-              color: "#111827",
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis"
-            }}
-            title={claim.text}
-          >
+        <div className="min-w-0 flex items-start gap-2.5">
+          <Icon size={18} className="text-neutral-200 mt-0.5 shrink-0" aria-hidden="true" />
+          <p className="m-0 text-sm md:text-[0.95rem] font-medium text-neutral-100 break-words">
             {claim.text}
           </p>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "0.55rem" }}>
-          <span
-            style={{
-              borderRadius: "999px",
-              background: "#f3f4f6",
-              color: "#111827",
-              padding: "0.25rem 0.55rem",
-              fontSize: "0.75rem",
-              fontWeight: 700
-            }}
-          >
-            {claim.verdict === "unverifiable" ? "— Unverifiable" : `${claim.confidence ?? 0}%`}
+        <div className="flex shrink-0 items-center gap-2">
+          <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${meta.tone}`}>
+            {claim.verdict === "unverifiable" ? "Unverifiable" : `${claim.confidence ?? 0}%`}
           </span>
-          {expanded ? <ChevronUp size={18} color="#6b7280" /> : <ChevronDown size={18} color="#6b7280" />}
+          {expanded ? <ChevronUp size={16} className="text-neutral-400" /> : <ChevronDown size={16} className="text-neutral-400" />}
         </div>
       </button>
 
-      <div
-        style={{
-          maxHeight: expanded ? "360px" : "0px",
-          overflow: "hidden",
-          transition: "max-height 260ms ease",
-          marginTop: expanded ? "0.8rem" : "0"
-        }}
-      >
-        <div style={{ borderTop: "1px solid #f0f0f0", paddingTop: "0.7rem", fontSize: "0.9rem", color: "#374151" }}>
-          <p style={{ margin: "0 0 0.45rem" }}>
-            <strong>Verdict:</strong> <span style={{ color: meta.color }}>{meta.label}</span>
+      {expanded ? (
+        <div className="mt-3 border-t border-neutral-800 pt-3 text-sm text-neutral-300 space-y-2">
+          <p className="m-0 break-words">
+            <span className="text-neutral-100 font-semibold">Verdict:</span> {meta.label}
           </p>
-          <p style={{ margin: "0 0 0.45rem" }}>
-            <strong>Correction:</strong> {claim.corrected || "No correction needed."}
+          <p className="m-0 break-words">
+            <span className="text-neutral-100 font-semibold">Correction:</span> {claim.corrected || "No correction needed."}
           </p>
-          <p style={{ margin: "0 0 0.45rem" }}>
-            <strong>Explanation:</strong> {claim.explanation}
+          <p className="m-0 break-words">
+            <span className="text-neutral-100 font-semibold">Explanation:</span> {claim.explanation}
           </p>
-          <p style={{ margin: 0 }}>
-            <strong>Source:</strong>{" "}
+          <p className="m-0 break-words">
+            <span className="text-neutral-100 font-semibold">Source:</span>{" "}
             {claim.source_url ? (
-              <a href={claim.source_url} target="_blank" rel="noreferrer" style={{ color: "#2563eb" }}>
+              <a href={claim.source_url} target="_blank" rel="noreferrer" className="underline underline-offset-2 text-neutral-200 break-all">
                 {claim.source || claim.source_url}
               </a>
             ) : (
@@ -136,7 +82,7 @@ export function ClaimCard({ claim }: ClaimCardProps) {
             )}
           </p>
         </div>
-      </div>
+      ) : null}
     </article>
   );
 }

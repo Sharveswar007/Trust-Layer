@@ -1,4 +1,4 @@
-import type { Claim } from "@/lib/types";
+﻿import type { Claim } from "@/lib/types";
 
 type HighlightedTextProps = {
   originalText: string;
@@ -36,16 +36,10 @@ function findNonOverlappingMatch(text: string, term: string, ranges: Match[]): n
   return -1;
 }
 
-function highlightColor(verdict: Claim["verdict"]): string {
-  if (verdict === "correct") return "#166534";
-  if (verdict === "incorrect") return "#b91c1c";
-  return "#92400e";
-}
-
-function highlightBackground(verdict: Claim["verdict"]): string {
-  if (verdict === "correct") return "#dcfce7";
-  if (verdict === "incorrect") return "#fee2e2";
-  return "#fef3c7";
+function highlightClass(verdict: Claim["verdict"]): string {
+  if (verdict === "correct") return "bg-neutral-700/60 text-white border-neutral-500";
+  if (verdict === "incorrect") return "bg-neutral-800 text-white border-neutral-600";
+  return "bg-neutral-900 text-neutral-100 border-neutral-700";
 }
 
 export function HighlightedText({ originalText, claims }: HighlightedTextProps) {
@@ -86,15 +80,7 @@ export function HighlightedText({ originalText, claims }: HighlightedTextProps) 
       <span
         key={`claim-${range.start}-${range.end}`}
         title={tooltip}
-        style={{
-          color: highlightColor(range.claim.verdict),
-          background: highlightBackground(range.claim.verdict),
-          borderRadius: "6px",
-          padding: "0.08rem 0.2rem",
-          fontWeight: 600,
-          cursor: "help",
-          transition: "filter 180ms ease"
-        }}
+        className={`inline rounded-md border px-1 py-[1px] font-medium ${highlightClass(range.claim.verdict)}`}
       >
         {originalText.slice(range.start, range.end)}
       </span>
@@ -108,17 +94,10 @@ export function HighlightedText({ originalText, claims }: HighlightedTextProps) 
   }
 
   return (
-    <section
-      style={{
-        marginTop: "1rem",
-        border: "1px solid #e2e8f0",
-        background: "#ffffff",
-        borderRadius: "14px",
-        padding: "0.85rem 0.95rem"
-      }}
-    >
-      <p style={{ margin: "0 0 0.55rem", fontWeight: 700, color: "#0f172a" }}>Inline Claim Diff</p>
-      <p style={{ margin: 0, color: "#334155", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{nodes}</p>
+    <section className="panel mt-4 p-4">
+      <p className="m-0 mb-2 text-sm font-semibold text-neutral-100">Inline Claim Diff</p>
+      <p className="m-0 max-h-[420px] overflow-y-auto whitespace-pre-wrap break-words leading-7 text-sm text-neutral-300">{nodes}</p>
     </section>
   );
 }
+

@@ -1,4 +1,4 @@
-import Groq from "groq-sdk";
+﻿import Groq from "groq-sdk";
 import type { Verdict } from "@/lib/types";
 
 export type VerdictEvidence = {
@@ -31,6 +31,10 @@ function normalizeVerdict(value: unknown): Verdict {
   return "unverifiable";
 }
 
+function normalizeBinaryVerdict(value: unknown): "correct" | "incorrect" {
+  return value === "correct" ? "correct" : "incorrect";
+}
+
 function bucketConfidence(score: number): number {
   if (score >= 85) return 90;
   if (score >= 65) return 75;
@@ -59,6 +63,20 @@ function fallbackVerdict(): VerdictResult {
     corrected: "",
     explanation: "Unable to synthesize verdict from available evidence.",
     source: "",
+    source_url: ""
+  };
+}
+
+function fallbackForcedVerdict(claim: string, previousExplanation: string): VerdictResult {
+  return {
+    verdict: "incorrect",
+    confidence: 35,
+    corrected: claim,
+    explanation:
+      previousExplanation && previousExplanation.trim().length > 0
+        ? `Fallback resolution applied. ${previousExplanation.trim()}`
+        : "Fallback resolution applied because evidence was inconclusive.",
+    source: "groq-fallback",
     source_url: ""
   };
 }
@@ -147,5 +165,99 @@ FactCheck: ${JSON.stringify(evidence.factcheck)}
     };
   } catch {
     return fallbackVerdict();
+  }
+}
+
+export async function forceResolveVerdict(
+  claim: string,
+  evidence: VerdictEvidence,
+  previousExplanation: string
+): Promise<VerdictResult> {
+  const text = claim.trim();
+  if (!text) {
+    return fallbackForcedVerdict(claim, previousExplanation);
+  }
+
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) {
+    return fallbackForcedVerdict(claim, previousExplanation);
+  }
+
+  const groq = new Groq({ apiKey });
+  const prompt = `
+You are a fallback factual resolver.
+Your task is to force a binary outcome for one claim.
+Return ONLY strict JSON with this exact shape:
+{
+  "verdict": "correct" | "incorrect",
+  "confidence": 0-100,
+  "corrected": "string",
+  "explanation": "string",
+  "source": "string",
+  "source_url": "string"
+}
+
+Rules:
+- NEVER return "unverifiable".
+- If evidence is weak or conflicting, choose "incorrect" with low confidence (20-45).
+- If evidence is reasonably supportive, choose "correct" with moderate confidence (45-75).
+- Keep explanation concise and explicit.
+- source should reflect best available evidence origin or "groq-fallback".
+- source_url should be empty string when unavailable.
+- No markdown, no extra keys, no preamble.
+
+Claim: ${JSON.stringify(text)}
+Previous unresolved explanation: ${JSON.stringify(previousExplanation)}
+Web snippets: ${JSON.stringify(evidence.webSnippets)}
+Wikidata: ${JSON.stringify(evidence.wikidata)}
+FactCheck: ${JSON.stringify(evidence.factcheck)}
+`;
+
+  try {
+    const response = await groq.chat.completions.create({
+      model: "llama-3.1-8b-instant",
+      temperature: 0,
+      seed: 42,
+      messages: [
+        {
+          role: "user",
+          content: prompt
+        }
+      ]
+    });
+
+    const content = response.choices?.[0]?.message?.content;
+    if (!content) {
+      return fallbackForcedVerdict(claim, previousExplanation);
+    }
+
+    const parsed = JSON.parse(stripCodeFence(content)) as {
+      verdict?: unknown;
+      confidence?: unknown;
+      corrected?: unknown;
+      explanation?: unknown;
+      source?: unknown;
+      source_url?: unknown;
+    };
+
+    const verdict = normalizeBinaryVerdict(parsed.verdict);
+    const normalized = normalizeConfidence(parsed.confidence, verdict);
+
+    return {
+      verdict,
+      confidence: typeof normalized === "number" ? normalized : 35,
+      corrected: typeof parsed.corrected === "string" ? parsed.corrected.trim() : claim,
+      explanation:
+        typeof parsed.explanation === "string" && parsed.explanation.trim().length > 0
+          ? parsed.explanation.trim()
+          : "Binary fallback verdict applied from available evidence.",
+      source:
+        typeof parsed.source === "string" && parsed.source.trim().length > 0
+          ? parsed.source.trim()
+          : "groq-fallback",
+      source_url: typeof parsed.source_url === "string" ? parsed.source_url.trim() : ""
+    };
+  } catch {
+    return fallbackForcedVerdict(claim, previousExplanation);
   }
 }

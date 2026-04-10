@@ -1,9 +1,9 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { extractClaims } from "@/lib/extractor";
 import { searchWeb } from "@/lib/sources/serper";
 import { queryWikidata } from "@/lib/sources/wikidata";
 import { checkFacts } from "@/lib/sources/factcheck";
-import { synthesizeVerdict } from "@/lib/verdict";
+import { forceResolveVerdict, synthesizeVerdict } from "@/lib/verdict";
 import { getCached, setCached } from "@/lib/cache";
 import { classifyContent } from "@/lib/content-classifier";
 import { scoreDimensions, computeOverallScore, getRiskLevel } from "@/lib/dimension-scorer";
@@ -12,6 +12,43 @@ import type { Claim, VerifyResponse } from "@/lib/types";
 type VerifyRequestBody = {
   text?: string;
 };
+
+const VERIFY_CONCURRENCY = 4;
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  worker: (item: T, index: number) => Promise<R>
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let cursor = 0;
+
+  async function runWorker(): Promise<void> {
+    while (true) {
+      const index = cursor;
+      cursor += 1;
+      if (index >= items.length) {
+        return;
+      }
+      results[index] = await worker(items[index], index);
+    }
+  }
+
+  const workers = Array.from(
+    { length: Math.max(1, Math.min(concurrency, items.length || 1)) },
+    () => runWorker()
+  );
+  await Promise.all(workers);
+  return results;
+}
+
+function formatClaimGroup(label: string, claims: Claim[]): string | null {
+  if (claims.length === 0) {
+    return null;
+  }
+
+  return `${label}: ${claims.length} claim(s)`;
+}
 
 async function safeSearchWeb(claim: string): Promise<string[]> {
   try {
@@ -50,9 +87,9 @@ export async function POST(request: Request) {
     }
 
     const normalizedText = body.text.trim();
-    if (normalizedText.length < 10 || normalizedText.length > 5000) {
+    if (normalizedText.length < 10) {
       return NextResponse.json(
-        { error: "'text' must be between 10 and 5000 characters" },
+        { error: "'text' must be at least 10 characters" },
         { status: 400 }
       );
     }
@@ -64,19 +101,29 @@ export async function POST(request: Request) {
 
     const claims = await extractClaims(normalizedText);
 
-    const verifiedClaims: Claim[] = await Promise.all(
-      claims.map(async (claimText) => {
+    const verifiedClaims: Claim[] = await mapWithConcurrency(
+      claims,
+      VERIFY_CONCURRENCY,
+      async (claimText) => {
         const [webSnippets, wikidata, factcheck] = await Promise.all([
           safeSearchWeb(claimText),
           safeQueryWikidata(claimText),
           safeCheckFacts(claimText)
         ]);
 
-        const verdict = await synthesizeVerdict(claimText, {
+        let verdict = await synthesizeVerdict(claimText, {
           webSnippets,
           wikidata,
           factcheck
         });
+
+        if (verdict.verdict === "unverifiable") {
+          verdict = await forceResolveVerdict(
+            claimText,
+            { webSnippets, wikidata, factcheck },
+            verdict.explanation
+          );
+        }
 
         return {
           text: claimText,
@@ -87,58 +134,54 @@ export async function POST(request: Request) {
           source: verdict.source,
           source_url: verdict.source_url
         };
-      })
+      }
     );
 
-    // Classify content
     const contentType = classifyContent(normalizedText, verifiedClaims.map((c) => c.text));
-
-    // Score dimensions
     const dimensions = await scoreDimensions(verifiedClaims, contentType, normalizedText);
-
-    // Compute overall trust score (weighted average of dimensions)
     const overallTrustScore = computeOverallScore(dimensions);
-
-    // Get risk level
     const { level: riskLevel, label: riskLabel } = getRiskLevel(overallTrustScore);
 
-    // Generate reasoning points
     const reasoningPoints: string[] = [];
 
-    // Add dimension-specific reasons
     for (const dim of dimensions) {
       reasoningPoints.push(`${dim.name}: ${dim.score}/10 — ${dim.reason}`);
     }
 
-    // Add top issues/anomalies
-    const correctCount = verifiedClaims.filter((c) => c.verdict === "correct").length;
-    const incorrectCount = verifiedClaims.filter((c) => c.verdict === "incorrect").length;
-    const unverifiableCount = verifiedClaims.filter((c) => c.verdict === "unverifiable").length;
+    const correctClaims = verifiedClaims.filter((c) => c.verdict === "correct");
+    const incorrectClaims = verifiedClaims.filter((c) => c.verdict === "incorrect");
+    const unverifiableClaims = verifiedClaims.filter((c) => c.verdict === "unverifiable");
 
-    if (correctCount > 0) {
-      reasoningPoints.push(`✓ ${correctCount} claim(s) verified with evidence`);
+    const correctSummary = formatClaimGroup("Correct claims", correctClaims);
+    const incorrectSummary = formatClaimGroup("Wrong claims", incorrectClaims);
+    const unverifiableSummary = formatClaimGroup("Unverifiable claims", unverifiableClaims);
+
+    if (correctSummary) {
+      reasoningPoints.push(`- ${correctSummary}`);
     }
-    if (incorrectCount > 0) {
-      reasoningPoints.push(`✗ ${incorrectCount} claim(s) contradicted by sources`);
+    if (incorrectSummary) {
+      reasoningPoints.push(`- ${incorrectSummary}`);
     }
-    if (unverifiableCount > 0) {
-      const unverifiableRate = ((unverifiableCount / verifiedClaims.length) * 100).toFixed(0);
+    if (unverifiableSummary) {
+      reasoningPoints.push(`- ${unverifiableSummary}`);
+    }
+
+    const autoResolvedCount = claims.length > 0 ? unverifiableClaims.length : 0;
+    if (autoResolvedCount === 0) {
+      reasoningPoints.push("- All claims were resolved to correct/incorrect via primary+fallback verification.");
+    }
+
+    const unvettedSources = verifiedClaims.filter(
+      (c) => !["factcheck", "wikidata", "wikipedia"].some((s) => c.source.toLowerCase().includes(s))
+    ).length;
+    if (verifiedClaims.length > 0 && unvettedSources > verifiedClaims.length * 0.5) {
       reasoningPoints.push(
-        `⚠️ ${unverifiableCount} claim(s) unverifiable (${unverifiableRate}% of total)`
+        `- Heavy reliance on unvetted web snippets (${unvettedSources}/${verifiedClaims.length})`
       );
     }
 
-    // Check for heavy reliance on unvetted sources
-    const unvettedSources = verifiedClaims.filter((c) => !["factcheck", "wikidata", "wikipedia"].some((s) => c.source.toLowerCase().includes(s))).length;
-    if (unvettedSources > verifiedClaims.length * 0.5) {
-      reasoningPoints.push(
-        `⚠️ Heavy reliance on unvetted web snippets (${unvettedSources}/${verifiedClaims.length})`
-      );
-    }
-
-    // Check claim extraction quality
     if (verifiedClaims.length === 0) {
-      reasoningPoints.push("ℹ️ No verifiable claims extracted from input");
+      reasoningPoints.push("- No verifiable claims extracted from input");
     }
 
     const response: VerifyResponse = {
