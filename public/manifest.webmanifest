@@ -1,0 +1,18 @@
+{
+  "name": "TruthLayer Verify",
+  "short_name": "TruthLayer",
+  "description": "Verify claims with evidence-backed trust scoring.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#050505",
+  "theme_color": "#050505",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

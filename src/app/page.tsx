@@ -3,7 +3,9 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Loader2, ShieldCheck } from "lucide-react";
 import { ClaimsTable } from "@/components/ClaimsTable";
+import { HighlightedText } from "@/components/HighlightedText";
 import { TrustMatrix } from "@/components/TrustMatrix";
+import { getVerifyApiUrl } from "@/lib/api";
 import type { VerifyResponse } from "@/lib/types";
 
 export default function Home() {
@@ -48,7 +50,7 @@ export default function Home() {
 
     setLoading(true);
     try {
-      const response = await fetch("/api/verify", {
+      const response = await fetch(getVerifyApiUrl(), {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -155,6 +157,7 @@ export default function Home() {
             riskLabel={result.risk_label}
             reasoningPoints={result.reasoning_points}
           />
+          <HighlightedText originalText={input} claims={result.claims} />
           <ClaimsTable claims={result.claims} />
         </section>
       ) : null}

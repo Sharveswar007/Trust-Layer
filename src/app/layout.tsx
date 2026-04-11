@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   title: "TruthLayer Verify",
   description: "Verify claims with evidence-backed trust scoring.",
   icons: {
-    icon: "/favicon.ico"
+    icon: "/icon.svg"
   }
 };
 
@@ -30,6 +30,12 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        <link rel="manifest" href="/manifest.webmanifest" />
+        <meta name="theme-color" content="#050505" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+      </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
