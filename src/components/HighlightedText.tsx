@@ -61,8 +61,8 @@ function getTemporalDiff(claim: Claim): TemporalDiff | null {
     return null;
   }
 
-  const from = claimYears[0];
-  const to = correctedYears[0];
+  const from = claimYears[0]!;
+  const to = correctedYears[0]!;
   if (from === to) {
     return null;
   }
