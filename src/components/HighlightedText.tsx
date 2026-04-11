@@ -164,6 +164,10 @@ export function HighlightedText({ originalText, claims }: HighlightedTextProps) 
               {incorrectClaims.slice(0, 5).map((claim, idx) => (
                 <div key={`${claim.text}-wrong-${idx}`} className="rounded-lg border border-red-500/25 bg-black/20 p-2">
                   <p className="m-0 text-sm font-medium text-red-100">{claim.text}</p>
+                  <p className="m-0 mt-1 text-xs text-neutral-300">
+                    Truth likelihood: <span className="text-red-300 font-semibold">{claim.confidence ?? 0}%</span>
+                    <span className="text-neutral-400" title="Low % = strong contradicting evidence found"> (low = contradicted)</span>
+                  </p>
                   {claim.corrected ? (
                     <p className="m-0 mt-1 text-xs text-neutral-200">
                       Suggested correction: <span className="text-emerald-200">{claim.corrected}</span>
@@ -186,7 +190,10 @@ export function HighlightedText({ originalText, claims }: HighlightedTextProps) 
               {correctClaims.slice(0, 5).map((claim, idx) => (
                 <div key={`${claim.text}-correct-${idx}`} className="rounded-lg border border-emerald-500/25 bg-black/20 p-2">
                   <p className="m-0 text-sm font-medium text-emerald-100">{claim.text}</p>
-                  <p className="m-0 mt-1 text-xs text-neutral-200">Confidence: {claim.confidence ?? 0}%</p>
+                  <p className="m-0 mt-1 text-xs text-neutral-300">
+                    Truth likelihood: <span className="text-emerald-300 font-semibold">{claim.confidence ?? 0}%</span>
+                    <span className="text-neutral-400" title="High % = strong supporting evidence found"> (high = verified)</span>
+                  </p>
                 </div>
               ))}
             </div>
