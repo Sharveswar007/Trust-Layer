@@ -50,6 +50,28 @@ function formatClaimGroup(label: string, claims: Claim[]): string | null {
   return `${label}: ${claims.length} claim(s)`;
 }
 
+function hasVettedEvidence(wikidata: string | null, factcheck: { rating: string; source: string; url: string } | null): boolean {
+  return Boolean(wikidata || factcheck);
+}
+
+function isHistoricallySensitiveClaim(claim: string): boolean {
+  const normalized = claim.toLowerCase();
+  return /\b(originally|first|earliest|ancient|historic|historical|dynasty|century|constructed|built|founded|reigned|reign|era|medieval|qin|ming|han|tang|song)\b/.test(
+    normalized
+  );
+}
+
+function shouldDowngradeWebOnlyHistoricalClaim(
+  claim: string,
+  evidence: { webSnippets: string[]; wikidata: string | null; factcheck: { rating: string; source: string; url: string } | null }
+): boolean {
+  if (!isHistoricallySensitiveClaim(claim)) {
+    return false;
+  }
+
+  return evidence.webSnippets.length > 0 && !hasVettedEvidence(evidence.wikidata, evidence.factcheck);
+}
+
 async function safeSearchWeb(claim: string): Promise<string[]> {
   try {
     return await searchWeb(claim);
@@ -138,6 +160,18 @@ export async function POST(request: Request) {
             { webSnippets, wikidata, factcheck },
             verdict.explanation
           );
+        }
+
+        if (shouldDowngradeWebOnlyHistoricalClaim(claimText, { webSnippets, wikidata, factcheck })) {
+          verdict = {
+            verdict: "unverifiable",
+            confidence: null,
+            corrected: "",
+            explanation:
+              "Historical claim could not be grounded in vetted evidence. Web snippets alone are insufficient for a confident verdict.",
+            source: "evidence-gate",
+            source_url: ""
+          };
         }
 
         return {

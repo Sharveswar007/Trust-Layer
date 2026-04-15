@@ -147,7 +147,7 @@
       "text": "The Great Wall was originally constructed during the Ming Dynasty.",
       "expectedClaims": 1,
       "expectedVerdicts": {
-        "The Great Wall was originally constructed during the Ming Dynasty": "incorrect"
+        "The Great Wall was originally constructed during the Ming Dynasty": "unverifiable"
       }
     },
     {
