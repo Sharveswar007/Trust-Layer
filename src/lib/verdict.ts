@@ -175,22 +175,21 @@ export async function forceResolveVerdict(
 ): Promise<VerdictResult> {
   const text = claim.trim();
   if (!text) {
-    return fallbackForcedVerdict(claim, previousExplanation);
+    return fallbackVerdict();
   }
 
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
-    return fallbackForcedVerdict(claim, previousExplanation);
+    return fallbackVerdict();
   }
 
   const groq = new Groq({ apiKey });
   const prompt = `
-You are a fallback factual resolver.
-Your task is to force a binary outcome for one claim.
+You are a fallback factual resolver for edge cases (future predictions, unverifiable claims, contradictory evidence).
 Return ONLY strict JSON with this exact shape:
 {
-  "verdict": "correct" | "incorrect",
-  "confidence": 0-100,
+  "verdict": "correct" | "incorrect" | "unverifiable",
+  "confidence": 0-100 | null,
   "corrected": "string",
   "explanation": "string",
   "source": "string",
@@ -198,9 +197,10 @@ Return ONLY strict JSON with this exact shape:
 }
 
 Rules:
-- NEVER return "unverifiable".
-- If evidence is weak or conflicting, choose "incorrect" with low confidence (20-45).
-- If evidence is reasonably supportive, choose "correct" with moderate confidence (45-75).
+- Return "unverifiable" if the claim is about future events, unfalsifiable, or evidence is genuinely insufficient.
+- Return "incorrect" only if evidence clearly contradicts the claim.
+- Return "correct" only if evidence reasonably supports the claim.
+- If verdict is "unverifiable", set confidence to null.
 - Keep explanation concise and explicit.
 - source should reflect best available evidence origin or "groq-fallback".
 - source_url should be empty string when unavailable.
@@ -240,17 +240,17 @@ FactCheck: ${JSON.stringify(evidence.factcheck)}
       source_url?: unknown;
     };
 
-    const verdict = normalizeBinaryVerdict(parsed.verdict);
+    const verdict = normalizeVerdict(parsed.verdict);
     const normalized = normalizeConfidence(parsed.confidence, verdict);
 
     return {
       verdict,
-      confidence: typeof normalized === "number" ? normalized : 35,
-      corrected: typeof parsed.corrected === "string" ? parsed.corrected.trim() : claim,
+      confidence: verdict === "unverifiable" ? null : (typeof normalized === "number" ? normalized : 35),
+      corrected: typeof parsed.corrected === "string" ? parsed.corrected.trim() : (verdict === "incorrect" ? claim : ""),
       explanation:
         typeof parsed.explanation === "string" && parsed.explanation.trim().length > 0
           ? parsed.explanation.trim()
-          : "Binary fallback verdict applied from available evidence.",
+          : "Fallback verdict applied due to insufficient or conflicting evidence.",
       source:
         typeof parsed.source === "string" && parsed.source.trim().length > 0
           ? parsed.source.trim()
@@ -258,6 +258,6 @@ FactCheck: ${JSON.stringify(evidence.factcheck)}
       source_url: typeof parsed.source_url === "string" ? parsed.source_url.trim() : ""
     };
   } catch {
-    return fallbackForcedVerdict(claim, previousExplanation);
+    return fallbackVerdict();
   }
 }

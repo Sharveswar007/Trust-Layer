@@ -339,21 +339,63 @@ When a claim is marked incorrect, TruthLayer classifies WHY:
 
 ---
 
+## Evaluation & Benchmarking
+
+### Phase 2: Rigorous Evaluation Dataset
+
+We have created a labeled benchmark of 35 test cases across 8 categories to measure extraction accuracy and verdict correctness:
+
+- **Clean Facts** (5 cases): Straightforward factual statements
+- **Factual Errors** (5 cases): Obviously wrong claims with incorrect dates/facts
+- **Compound Claims** (5 cases): Multi-part sentences ("X and Y")
+- **Historical Edge Cases** (5 cases): Complex historical facts and false historical claims
+- **Opinion/No Facts** (5 cases): Subjective statements (should extract 0 claims)
+- **Future Predictions** (5 cases): Unverifiable future-tense claims
+- **Satire/Absurd** (5 cases): Deliberately ridiculous claims
+- **Numeric Claims** (5 cases): Statistics and measurements
+
+### Running the Evaluation
+
+```bash
+# Start the dev server (if not already running)
+npm run dev
+
+# Run evaluation (in a new terminal)
+npx ts-node eval_runner.ts
+```
+
+The runner will output:
+- Extraction F1 score (per category)
+- Verdict accuracy (per category)
+- Overall pass rate
+
+### Current Benchmark Notes
+
+Key improvements from Phase 1:
+- **Unverifiable verdict path**: Future predictions now correctly return "unverifiable" instead of forced binary outcomes
+- **Claim deduplication**: Compound claims like "X and Y" are now deduplicated to prevent over-extraction
+- **Per-stage telemetry**: All extraction, source routing, and fallback decisions are now logged for debugging
+
+---
+
 ## Known Issues & TODOs
 
+### Recently Fixed (Phase 1)
+- ✅ **Unverifiable path** — Fallback resolver now allows "unverifiable" for edge cases like future predictions
+- ✅ **Claim deduplication** — Compound claims no longer generate duplicates (using 75% Jaccard similarity)
+- ✅ **Pipeline telemetry** — Extraction count, source hits, and fallback resolves are logged
+
 ### Current Gaps
-1. **Extraction duplication** — Some sentences parsed multiple times, inflating claim count
-2. **Future-tense handling** — Fallback resolver forces binary verdict instead of "unverifiable"
-3. **Compound claims** — "X and Y" sometimes scored as one claim, sometimes two
-4. **Source diversity** — Over-reliance on web snippets for general knowledge claims
+1. **Source diversity** — Over-reliance on web snippets for general knowledge claims
+2. **Complex compound claims** — Nested "X, Y, and Z" structures sometimes under-extracted
+3. **Domain-specific accuracy** — Medical and financial claims need more careful verification
 
 ### Roadmap
-- [ ] Implement deduplicating claim extractor
-- [ ] Add "unverifiable" path to fallback resolver
 - [ ] Improve source weighting (Wikidata=higher priority than web)
-- [ ] Add caching layer for repeated claims
-- [ ] Implement batch processing API
+- [ ] Add semantic contradiction detection across sources
+- [ ] Implement fact-check refinement with follow-up queries
 - [ ] Support languages beyond English (French, Spanish, Hindi)
+- [ ] Add batch processing API for bulk fact-checking
 
 ---
 

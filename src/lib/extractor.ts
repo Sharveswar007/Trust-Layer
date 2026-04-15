@@ -16,6 +16,38 @@ function hasNumericSignal(sentence: string): boolean {
   return /\d/.test(sentence);
 }
 
+function calculateSimilarity(a: string, b: string): number {
+  const aLower = a.toLowerCase();
+  const bLower = b.toLowerCase();
+  
+  if (aLower === bLower) return 1.0;
+  
+  const aWords = new Set(aLower.split(/\s+/).filter(w => w.length > 2));
+  const bWords = new Set(bLower.split(/\s+/).filter(w => w.length > 2));
+  
+  if (aWords.size === 0 || bWords.size === 0) return 0;
+  
+  const intersection = [...aWords].filter(w => bWords.has(w)).length;
+  const union = new Set([...aWords, ...bWords]).size;
+  
+  return union > 0 ? intersection / union : 0;
+}
+
+function deduplicateClaims(claims: string[], threshold: number = 0.75): string[] {
+  if (claims.length <= 1) return claims;
+  
+  const kept: string[] = [];
+  
+  for (const claim of claims) {
+    const hasDuplicate = kept.some(keptClaim => calculateSimilarity(claim, keptClaim) >= threshold);
+    if (!hasDuplicate) {
+      kept.push(claim);
+    }
+  }
+  
+  return kept;
+}
+
 function parseClaimsPayload(content: string): string[] {
   const cleaned = content
     .replace(/^```json\s*/i, "")
@@ -153,13 +185,16 @@ export async function extractClaims(text: string): Promise<string[]> {
 
     const fallbackClaims = sentenceCandidates(cleanText);
     const mergedClaims = Array.from(new Set([...extractedClaims, ...fallbackClaims]));
+    
+    // Deduplicate semantically similar claims
+    const deduplicatedClaims = deduplicateClaims(mergedClaims, 0.75);
 
-    if (mergedClaims.length === 0) {
+    if (deduplicatedClaims.length === 0) {
       return [];
     }
 
     const scored = await mapWithConcurrency(
-      mergedClaims,
+      deduplicatedClaims,
       CHECKWORTHY_CONCURRENCY,
       async (claim) => {
         const result = await scoreCheckworthy(claim);

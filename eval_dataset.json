@@ -1,0 +1,361 @@
+{
+  "evalDataset": [
+    {
+      "id": "clean_001",
+      "category": "clean_facts",
+      "text": "India gained independence in 1947.",
+      "expectedClaims": 1,
+      "expectedVerdicts": {
+        "India gained independence in 1947": "correct"
+      }
+    },
+    {
+      "id": "clean_002",
+      "category": "clean_facts",
+      "text": "The Great Wall of China is located in northern China.",
+      "expectedClaims": 1,
+      "expectedVerdicts": {
+        "The Great Wall of China is located in northern China": "correct"
+      }
+    },
+    {
+      "id": "clean_003",
+      "category": "clean_facts",
+      "text": "Water boils at 100 degrees Celsius at sea level.",
+      "expectedClaims": 1,
+      "expectedVerdicts": {
+        "Water boils at 100 degrees Celsius at sea level": "correct"
+      }
+    },
+    {
+      "id": "clean_004",
+      "category": "clean_facts",
+      "text": "Paris is the capital of France.",
+      "expectedClaims": 1,
+      "expectedVerdicts": {
+        "Paris is the capital of France": "correct"
+      }
+    },
+    {
+      "id": "clean_005",
+      "category": "clean_facts",
+      "text": "The Eiffel Tower was completed in 1889.",
+      "expectedClaims": 1,
+      "expectedVerdicts": {
+        "The Eiffel Tower was completed in 1889": "correct"
+      }
+    },
+    {
+      "id": "wrong_001",
+      "category": "factual_errors",
+      "text": "India gained independence in 1948.",
+      "expectedClaims": 1,
+      "expectedVerdicts": {
+        "India gained independence in 1948": "incorrect"
+      }
+    },
+    {
+      "id": "wrong_002",
+      "category": "factual_errors",
+      "text": "The Eiffel Tower is located in Rome and was built in 1900.",
+      "expectedClaims": 2,
+      "expectedVerdicts": {
+        "The Eiffel Tower is located in Rome": "incorrect",
+        "The Eiffel Tower was built in 1900": "incorrect"
+      }
+    },
+    {
+      "id": "wrong_003",
+      "category": "factual_errors",
+      "text": "World War 2 ended in 1946.",
+      "expectedClaims": 1,
+      "expectedVerdicts": {
+        "World War 2 ended in 1946": "incorrect"
+      }
+    },
+    {
+      "id": "wrong_004",
+      "category": "factual_errors",
+      "text": "The speed of light is 200,000 km per second.",
+      "expectedClaims": 1,
+      "expectedVerdicts": {
+        "The speed of light is 200,000 km per second": "incorrect"
+      }
+    },
+    {
+      "id": "wrong_005",
+      "category": "factual_errors",
+      "text": "Mount Everest is 9,500 meters tall.",
+      "expectedClaims": 1,
+      "expectedVerdicts": {
+        "Mount Everest is 9,500 meters tall": "incorrect"
+      }
+    },
+    {
+      "id": "compound_001",
+      "category": "compound_claims",
+      "text": "India is the world's largest democracy and gained independence in 1947.",
+      "expectedClaims": 2,
+      "expectedVerdicts": {
+        "India is the world's largest democracy": "correct",
+        "India gained independence in 1947": "correct"
+      }
+    },
+    {
+      "id": "compound_002",
+      "category": "compound_claims",
+      "text": "The Eiffel Tower is located in Paris and was completed in 1889.",
+      "expectedClaims": 2,
+      "expectedVerdicts": {
+        "The Eiffel Tower is located in Paris": "correct",
+        "The Eiffel Tower was completed in 1889": "correct"
+      }
+    },
+    {
+      "id": "compound_003",
+      "category": "compound_claims",
+      "text": "France has a population of about 68 million and is in Western Europe.",
+      "expectedClaims": 2,
+      "expectedVerdicts": {
+        "France has a population of about 68 million": "correct",
+        "France is in Western Europe": "correct"
+      }
+    },
+    {
+      "id": "compound_004",
+      "category": "compound_claims",
+      "text": "Python is a programming language created in 1991 and is widely used for data science.",
+      "expectedClaims": 2,
+      "expectedVerdicts": {
+        "Python is a programming language created in 1991": "correct",
+        "Python is widely used for data science": "correct"
+      }
+    },
+    {
+      "id": "compound_005",
+      "category": "compound_claims",
+      "text": "The United States has 50 states and was founded in 1776.",
+      "expectedClaims": 2,
+      "expectedVerdicts": {
+        "The United States has 50 states": "correct",
+        "The United States was founded in 1776": "correct"
+      }
+    },
+    {
+      "id": "historical_001",
+      "category": "historical_edge_case",
+      "text": "The Great Wall was originally constructed during the Ming Dynasty.",
+      "expectedClaims": 1,
+      "expectedVerdicts": {
+        "The Great Wall was originally constructed during the Ming Dynasty": "incorrect"
+      }
+    },
+    {
+      "id": "historical_002",
+      "category": "historical_edge_case",
+      "text": "Napoleon was born in 1769 on the island of Corsica.",
+      "expectedClaims": 2,
+      "expectedVerdicts": {
+        "Napoleon was born in 1769": "correct",
+        "Napoleon was born on the island of Corsica": "correct"
+      }
+    },
+    {
+      "id": "historical_003",
+      "category": "historical_edge_case",
+      "text": "The Roman Empire fell in 476 AD in the West.",
+      "expectedClaims": 1,
+      "expectedVerdicts": {
+        "The Roman Empire fell in 476 AD in the West": "correct"
+      }
+    },
+    {
+      "id": "historical_004",
+      "category": "historical_edge_case",
+      "text": "Julius Caesar was killed in 45 BC.",
+      "expectedClaims": 1,
+      "expectedVerdicts": {
+        "Julius Caesar was killed in 45 BC": "incorrect"
+      }
+    },
+    {
+      "id": "historical_005",
+      "category": "historical_edge_case",
+      "text": "The printing press was invented by Gutenberg around 1440.",
+      "expectedClaims": 1,
+      "expectedVerdicts": {
+        "The printing press was invented by Gutenberg around 1440": "correct"
+      }
+    },
+    {
+      "id": "opinion_001",
+      "category": "opinion_no_facts",
+      "text": "I think artificial intelligence is truly transformative. Many people believe technology will shape the future.",
+      "expectedClaims": 0,
+      "expectedVerdicts": {}
+    },
+    {
+      "id": "opinion_002",
+      "category": "opinion_no_facts",
+      "text": "Innovation is beautiful and progress feels inevitable.",
+      "expectedClaims": 0,
+      "expectedVerdicts": {}
+    },
+    {
+      "id": "opinion_003",
+      "category": "opinion_no_facts",
+      "text": "I really like cheese. It is wonderful and delicious in my opinion.",
+      "expectedClaims": 0,
+      "expectedVerdicts": {}
+    },
+    {
+      "id": "opinion_004",
+      "category": "opinion_no_facts",
+      "text": "Science is amazing and nature is beautiful.",
+      "expectedClaims": 0,
+      "expectedVerdicts": {}
+    },
+    {
+      "id": "opinion_005",
+      "category": "opinion_no_facts",
+      "text": "I believe that hard work is important for success.",
+      "expectedClaims": 0,
+      "expectedVerdicts": {}
+    },
+    {
+      "id": "future_001",
+      "category": "future_predictions",
+      "text": "Quantum computing will solve all encryption problems by 2030.",
+      "expectedClaims": 1,
+      "expectedVerdicts": {
+        "Quantum computing will solve all encryption problems by 2030": "unverifiable"
+      }
+    },
+    {
+      "id": "future_002",
+      "category": "future_predictions",
+      "text": "Artificial general intelligence will be achieved within the next decade.",
+      "expectedClaims": 1,
+      "expectedVerdicts": {
+        "Artificial general intelligence will be achieved within the next decade": "unverifiable"
+      }
+    },
+    {
+      "id": "future_003",
+      "category": "future_predictions",
+      "text": "Mars will have a human colony by 2040.",
+      "expectedClaims": 1,
+      "expectedVerdicts": {
+        "Mars will have a human colony by 2040": "unverifiable"
+      }
+    },
+    {
+      "id": "future_004",
+      "category": "future_predictions",
+      "text": "Renewable energy will provide 80% of global electricity by 2050.",
+      "expectedClaims": 1,
+      "expectedVerdicts": {
+        "Renewable energy will provide 80% of global electricity by 2050": "unverifiable"
+      }
+    },
+    {
+      "id": "future_005",
+      "category": "future_predictions",
+      "text": "Bitcoin will reach $1 million per coin by 2030.",
+      "expectedClaims": 1,
+      "expectedVerdicts": {
+        "Bitcoin will reach $1 million per coin by 2030": "unverifiable"
+      }
+    },
+    {
+      "id": "satire_001",
+      "category": "satire_absurd",
+      "text": "The great bowling alley of China was originally constructed with giant granite bowling balls as defensive weapons.",
+      "expectedClaims": 1,
+      "expectedVerdicts": {
+        "The great bowling alley of China was originally constructed with giant granite bowling balls as defensive weapons": "incorrect"
+      }
+    },
+    {
+      "id": "satire_002",
+      "category": "satire_absurd",
+      "text": "Emperor Wanli had a passionate love for bowling and built a secret lane inside the Forbidden City.",
+      "expectedClaims": 1,
+      "expectedVerdicts": {
+        "Emperor Wanli had a passionate love for bowling and built a secret lane inside the Forbidden City": "unverifiable"
+      }
+    },
+    {
+      "id": "satire_003",
+      "category": "satire_absurd",
+      "text": "The watchtowers of the Great Wall were used as refreshment stands for tired bowlers.",
+      "expectedClaims": 1,
+      "expectedVerdicts": {
+        "The watchtowers of the Great Wall were used as refreshment stands for tired bowlers": "incorrect"
+      }
+    },
+    {
+      "id": "satire_004",
+      "category": "satire_absurd",
+      "text": "A bowling strike caused an earthquake that destroyed a section of the Great Wall in 1623.",
+      "expectedClaims": 1,
+      "expectedVerdicts": {
+        "A bowling strike caused an earthquake that destroyed a section of the Great Wall in 1623": "incorrect"
+      }
+    },
+    {
+      "id": "satire_005",
+      "category": "satire_absurd",
+      "text": "Historians estimate that 30% of the Great Wall's damage was caused by enthusiastic bowlers.",
+      "expectedClaims": 1,
+      "expectedVerdicts": {
+        "Historians estimate that 30% of the Great Wall's damage was caused by enthusiastic bowlers": "incorrect"
+      }
+    },
+    {
+      "id": "numeric_001",
+      "category": "numeric_claims",
+      "text": "China has a population of approximately 1.4 billion people.",
+      "expectedClaims": 1,
+      "expectedVerdicts": {
+        "China has a population of approximately 1.4 billion people": "correct"
+      }
+    },
+    {
+      "id": "numeric_002",
+      "category": "numeric_claims",
+      "text": "The Amazon rainforest produces about 20% of the world's oxygen.",
+      "expectedClaims": 1,
+      "expectedVerdicts": {
+        "The Amazon rainforest produces about 20% of the world's oxygen": "correct"
+      }
+    },
+    {
+      "id": "numeric_003",
+      "category": "numeric_claims",
+      "text": "The human brain has approximately 86 billion neurons.",
+      "expectedClaims": 1,
+      "expectedVerdicts": {
+        "The human brain has approximately 86 billion neurons": "correct"
+      }
+    },
+    {
+      "id": "numeric_004",
+      "category": "numeric_claims",
+      "text": "McDonald's earns $10 billion dollars each minute.",
+      "expectedClaims": 1,
+      "expectedVerdicts": {
+        "McDonald's earns $10 billion dollars each minute": "incorrect"
+      }
+    },
+    {
+      "id": "numeric_005",
+      "category": "numeric_claims",
+      "text": "There are 195 countries in the world.",
+      "expectedClaims": 1,
+      "expectedVerdicts": {
+        "There are 195 countries in the world": "correct"
+      }
+    }
+  ]
+}

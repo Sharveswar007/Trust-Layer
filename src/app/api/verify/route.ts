@@ -79,6 +79,15 @@ async function safeCheckFacts(
 export async function POST(request: Request) {
   const startedAt = Date.now();
 
+  // Telemetry tracking
+  const telemetry = {
+    claimsExtracted: 0,
+    claimsAfterDedup: 0,
+    sourcesHit: { web: 0, wikidata: 0, factcheck: 0 },
+    fallbackResolves: 0,
+    unverifiableFinal: 0
+  };
+
   try {
     const body = (await request.json()) as VerifyRequestBody;
 
@@ -100,6 +109,7 @@ export async function POST(request: Request) {
     }
 
     const claims = await extractClaims(normalizedText);
+    telemetry.claimsExtracted = claims.length;
 
     const verifiedClaims: Claim[] = await mapWithConcurrency(
       claims,
@@ -111,6 +121,10 @@ export async function POST(request: Request) {
           safeCheckFacts(claimText)
         ]);
 
+        if (webSnippets.length > 0) telemetry.sourcesHit.web++;
+        if (wikidata) telemetry.sourcesHit.wikidata++;
+        if (factcheck) telemetry.sourcesHit.factcheck++;
+
         let verdict = await synthesizeVerdict(claimText, {
           webSnippets,
           wikidata,
@@ -118,6 +132,7 @@ export async function POST(request: Request) {
         });
 
         if (verdict.verdict === "unverifiable") {
+          telemetry.fallbackResolves++;
           verdict = await forceResolveVerdict(
             claimText,
             { webSnippets, wikidata, factcheck },
@@ -151,6 +166,12 @@ export async function POST(request: Request) {
     const correctClaims = verifiedClaims.filter((c) => c.verdict === "correct");
     const incorrectClaims = verifiedClaims.filter((c) => c.verdict === "incorrect");
     const unverifiableClaims = verifiedClaims.filter((c) => c.verdict === "unverifiable");
+
+    // Track unverifiable claims
+    telemetry.unverifiableFinal = unverifiableClaims.length;
+
+    // Log telemetry for debugging (available in server logs)
+    console.log(`[TruthLayer Telemetry] Extracted: ${telemetry.claimsExtracted}, Sources: Web=${telemetry.sourcesHit.web} Wikidata=${telemetry.sourcesHit.wikidata} FactCheck=${telemetry.sourcesHit.factcheck}, Fallback resolves: ${telemetry.fallbackResolves}, Final unverifiable: ${telemetry.unverifiableFinal}`);
 
     const correctSummary = formatClaimGroup("Correct claims", correctClaims);
     const incorrectSummary = formatClaimGroup("Wrong claims", incorrectClaims);
