@@ -339,63 +339,42 @@ When a claim is marked incorrect, TruthLayer classifies WHY:
 
 ---
 
-## Evaluation & Benchmarking
-
-### Phase 2: Rigorous Evaluation Dataset
-
-We have created a labeled benchmark of 35 test cases across 8 categories to measure extraction accuracy and verdict correctness:
-
-- **Clean Facts** (5 cases): Straightforward factual statements
-- **Factual Errors** (5 cases): Obviously wrong claims with incorrect dates/facts
-- **Compound Claims** (5 cases): Multi-part sentences ("X and Y")
-- **Historical Edge Cases** (5 cases): Complex historical facts and false historical claims
-- **Opinion/No Facts** (5 cases): Subjective statements (should extract 0 claims)
-- **Future Predictions** (5 cases): Unverifiable future-tense claims
-- **Satire/Absurd** (5 cases): Deliberately ridiculous claims
-- **Numeric Claims** (5 cases): Statistics and measurements
-
-### Running the Evaluation
-
-```bash
-# Start the dev server (if not already running)
-npm run dev
-
-# Run evaluation (in a new terminal)
-npx ts-node eval_runner.ts
-```
-
-The runner will output:
-- Extraction F1 score (per category)
-- Verdict accuracy (per category)
-- Overall pass rate
-
-### Current Benchmark Notes
-
-Key improvements from Phase 1:
-- **Unverifiable verdict path**: Future predictions now correctly return "unverifiable" instead of forced binary outcomes
-- **Claim deduplication**: Compound claims like "X and Y" are now deduplicated to prevent over-extraction
-- **Per-stage telemetry**: All extraction, source routing, and fallback decisions are now logged for debugging
-
 ---
 
 ## Known Issues & TODOs
 
-### Recently Fixed (Phase 1)
-- ✅ **Unverifiable path** — Fallback resolver now allows "unverifiable" for edge cases like future predictions
-- ✅ **Claim deduplication** — Compound claims no longer generate duplicates (using 75% Jaccard similarity)
-- ✅ **Pipeline telemetry** — Extraction count, source hits, and fallback resolves are logged
-
 ### Current Gaps
-1. **Source diversity** — Over-reliance on web snippets for general knowledge claims
-2. **Complex compound claims** — Nested "X, Y, and Z" structures sometimes under-extracted
-3. **Domain-specific accuracy** — Medical and financial claims need more careful verification
+1. **Claim extraction quality** — The current extractor can miss absurd, sarcastic, or heavily compound claims.
+2. **Source diversity** — Over-reliance on web snippets for general knowledge claims.
+3. **Domain-specific accuracy** — Medical and financial claims need more careful verification.
 
-### Roadmap
-- [ ] Improve source weighting (Wikidata=higher priority than web)
-- [ ] Add semantic contradiction detection across sources
-- [ ] Implement fact-check refinement with follow-up queries
-- [ ] Support languages beyond English (French, Spanish, Hindi)
-- [ ] Add batch processing API for bulk fact-checking
+### Practical Limitation
+This repo does not include a production-grade claim-extraction backend yet. It does not use a ClaimBuster-style extractor, so complex, sarcastic, or compound text can be under-extracted or missed. A future deployment should use a separate server-side NLP service for claim decomposition and sentence analysis.
+
+### Recommended Server-Side Alternative
+Run a small Python service with:
+- Stanza for tokenization, sentence segmentation, dependency parsing, and NER
+- A claim decomposition step to split compound text into atomic claims
+- The existing Next.js app calling that service from the `/api/verify` route
+
+Suggested server stack:
+- FastAPI
+- `stanza`
+- `uvicorn`
+- `pydantic`
+
+Suggested server tasks:
+- `POST /extract` to return atomic claims
+- `POST /analyze` to return entities and claim structure
+- `POST /health` for readiness checks
+
+Example launch commands:
+```bash
+python -m venv .venv
+.\.venv\Scripts\activate
+pip install fastapi uvicorn stanza pydantic
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
 
 ---
 
